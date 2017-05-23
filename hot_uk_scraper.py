@@ -7,29 +7,43 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-
 search = str(input('Please enter product name '))
-#search = "xbox"
 page = requests.get("http://www.hotukdeals.com/search?action=search&keywords={}".format(search))
 soup = BeautifulSoup(page.content, 'html.parser')
 container = soup.find_all(class_="space--mt-3")[5]
 
-# Scrape titles of elements and remove extraneous data
 titles = []
-tlist = [t["href"] for t in container.select("a.thread-title-text")]
-for title in tlist:
-	titles.append(title.replace("/deals/", "").replace("-", " ").rsplit(" ", 1)[0])
+retailers = []
+prices = []
+temps = []
+paths = []
+links = []
+URL = "http://www.hotukdeals.com"
 
 
-# Scrape temps of elements and convert to int's
-str_temps = [t.get_text() for t in container.select(".vwo-vote-container .vwo-temperature")]
-temps = list(map(int, str_temps))
+# Pull titles, clean and append to titles list
+title_list = [t.get_text() for t in container.select("a.thread-title-text")]
+[titles.append(t.split("£")[0].strip(' -')) for t in title_list]
 
+# Pull price, retailer, clean and append to price and retailer lists
+data = [p.get_text() for p in container.select(".vwo-title-info")]
+[retailers.append(r.split("@")[1].split("\n")[0].strip()) for r in data]
+[prices.append(p.split("@")[0].strip()) for p in data]
 
-# Create a Pandas table and sort on temp
+# Pull temps, convert to int's and append to temps list
+[temps.append(int(t.get_text())) for t in container.select(".vwo-vote-container .vwo-temperature")]
+
+# Pull paths to details page, append to url then append to links list
+[paths.append(p["href"]) for p in container.select("a.thread-title-text")]
+[links.append(URL + p) for p in paths]
+
+# Create Pandas table and sort on temp
 table = pd.DataFrame({
-        "titles": titles, 
+        "title": titles, 
         "temp": temps, 
+        "retailer": retailers, 
+        "price": prices,
+        "link": links, 
     })
 temp_sort = table.sort_values("temp", ascending=False)
 print(temp_sort)
