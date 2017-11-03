@@ -16,7 +16,6 @@ parser.add_argument("query", help="Add a search term "
 args = parser.parse_args()
 
 parameters = {"q": args.query}
-#page = requests.get("https://www.hotukdeals.com/search?q=xbox")
 page = requests.get("http://www.hotukdeals.com/search?", params=parameters)
 soup = BeautifulSoup(page.content, "html.parser")
 articles = soup.find_all("article")
@@ -26,7 +25,7 @@ titles = []
 retailers = []
 prices = []
 temps = []
-i=0
+
 # ----------PRICES----------
 for p in articles:
     if p.select(".thread-price"):
@@ -45,7 +44,6 @@ for tt in articles:
 # -------RETAILERS------------
 [retailers.append(r.get_text()) for r in source.select(".cept-merchant-name")]
 
-
 # -----------TEMPS------------
 for t in articles:
     if t.select(".vote-temp "):
@@ -54,17 +52,6 @@ for t in articles:
         temps.append(int(y))
     else:
         temps.append(0)
-
-
-
-print(prices)
-print(temps)
-
-print("Temps = "+str(len(temps)))
-print("Articles = "+str(len(articles)))
-print("Prices = "+str(len(prices)))
-print("Titles = "+str(len(titles)))
-print("Retailers = "+str(len(retailers)))
 
 
 # Create Pandas table and sort on temp
