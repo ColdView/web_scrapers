@@ -16,39 +16,56 @@ parser.add_argument("query", help="Add a search term "
 args = parser.parse_args()
 
 parameters = {"q": args.query}
+#page = requests.get("https://www.hotukdeals.com/search?q=xbox")
 page = requests.get("http://www.hotukdeals.com/search?", params=parameters)
 soup = BeautifulSoup(page.content, "html.parser")
+articles = soup.find_all("article")
 source = soup.find(class_="thread-list--type-list")
 
 titles = []
 retailers = []
 prices = []
 temps = []
+i=0
+# ----------PRICES----------
+for p in articles:
+    if p.select(".thread-price"):
+        price = p.select(".thread-price")[0].get_text().strip("£")
+        prices.append(price)
+    else:
+        prices.append(0)
 
-# Extract titles, links and append as hyperlinks to titles list
-for t in source.select("a.cept-tt"):
+# ----------TITLES-----------
+for tt in articles:
+    t = tt.select("a.thread-link")[0]
     titles.append('<a href="{u}" target="_blank">{name}</a>' \
                  .format(u=t["href"], name=t.get_text().split("£")[0].strip()))
 
-# Extract retailer info and append to retailers list
-[retailers.append(r.get_text()) for r in source.select(".thread-group")]
 
-# Extract price data, clean and append to prices list
-for p in source.select(".thread-listImgCell"):
-    if "£" in p.get_text():
-        x = p.get_text().replace(",", "")
-        y = re.search(r"([0-9.]+)", x).group(0)
-        prices.append(float(y))
+# -------RETAILERS------------
+[retailers.append(r.get_text()) for r in source.select(".cept-merchant-name")]
+
+
+# -----------TEMPS------------
+for t in articles:
+    if t.select(".vote-temp "):
+        temp = t.select(".vote-temp ")[0].get_text()
+        y = re.search(r"([0-9.-]+)", temp).group(0)
+        temps.append(int(y))
     else:
-        prices.append(0.00)
-
-# Extract temps, remove trailing degree symbol and append to temps list
-for t in source.select(".vote-temp"):
-    t = t.get_text().rstrip("°")
-    try:    
-        temps.append(int(t))
-    except:
         temps.append(0)
+
+
+
+print(prices)
+print(temps)
+
+print("Temps = "+str(len(temps)))
+print("Articles = "+str(len(articles)))
+print("Prices = "+str(len(prices)))
+print("Titles = "+str(len(titles)))
+print("Retailers = "+str(len(retailers)))
+
 
 # Create Pandas table and sort on temp
 df = pd.DataFrame({
@@ -63,3 +80,7 @@ pd.set_option('display.max_colwidth', 250)
 pd.set_option('colheader_justify', 'left')
 table.sort_values("temp", inplace=True, ascending=False)
 table.to_html('deals_table.html', escape=False)
+
+
+
+
